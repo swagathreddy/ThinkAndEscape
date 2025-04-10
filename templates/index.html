@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Void: Escape Protocol</title>
+    <style>
+       @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #ff2a6d;
+            --secondary-color: #05d9e8;
+            --bg-dark: #1a1a1a;
+            --text-color: #d1fff3;
+        }
+
+        body {
+            font-family: 'VT323', monospace;
+            background-color: var(--bg-dark);
+            color: var(--text-color);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+        .room-image-container {
+    margin: 1rem 0;
+    width: 100%;
+    max-width: 800px;
+    border: 2px solid var(--secondary-color);
+    box-shadow: 0 0 20px rgba(5, 217, 232, 0.2);
+}
+
+.room-image {
+    width: 100%;
+    height: auto;
+    display: none;  /* Initially hidden until loaded */
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.room-image-container .image-loading-placeholder {
+    padding: 2rem;
+    text-align: center;
+    color: var(--secondary-color);
+    background: rgba(5, 217, 232, 0.1);
+    border-radius: 4px;
+}
+
+@media (max-width: 768px) {
+    .room-image-container {
+        max-width: 100%;
+    }
+}
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0.92)),
+                url('https://images.unsplash.com/photo-1501862700950-18382cd41497?auto=format&fit=crop&w=2069&q=80');
+            background-size: cover;
+            background-position: center;
+            z-index: -1;
+            animation: backgroundPulse 8s ease-in-out infinite;
+        }
+
+        @keyframes backgroundPulse {
+            0%, 100% { filter: brightness(1) contrast(1); }
+            50% { filter: brightness(0.8) contrast(1.2); }
+        }
+
+        .noise {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyBAMAAADsEZWCAAAAElBMVEUAAAAAAAAAAAAAAAAAAAAAAADgKxmiAAAABnRSTlMDY2pkYmJUU+NfAAAAPklEQVQ4y2NgQAX8DKiAH58EAxChykABWEQDoRgqwIJPYgEDA1ESTAgSTGQpxuUkJDVESYA0kG4RcYYNVgkA+/qHxaSqz/QAAAAASUVORK5CYII=');
+            opacity: 0.05;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .container {
+            max-width: min(90%, 1000px);
+            margin: 2rem auto;
+            position: relative;
+            z-index: 2;
+        }
+
+        .title-container {
+            text-align: center;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        h1 {
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            color: var(--primary-color);
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+            animation: textGlitch 3s infinite;
+            text-shadow: 
+                0 0 10px var(--primary-color),
+                0 0 20px var(--primary-color),
+                0 0 40px var(--primary-color);
+        }
+
+        @keyframes textGlitch {
+            0%, 100% { transform: none; opacity: 1; }
+            92% { transform: skew(2deg); }
+            94% { transform: skew(-2deg); opacity: 0.8; }
+            96% { transform: skew(5deg); opacity: 0.9; }
+            98% { transform: none; opacity: 1; }
+        }
+
+        .chatbox {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid var(--secondary-color);
+            border-radius: 4px;
+            box-shadow: 
+                0 0 20px rgba(5, 217, 232, 0.2),
+                inset 0 0 20px rgba(5, 217, 232, 0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .chatbox::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--secondary-color);
+            animation: scanline 6s linear infinite;
+            opacity: 0.5;
+        }
+        .loading-spinner {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto;
+    border: 4px solid var(--secondary-color);
+    border-top: 4px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.image-loading-placeholder {
+    background: rgba(5, 217, 232, 0.1);
+    color: var(--secondary-color);
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 10px;
+    border: 1px dashed var(--secondary-color);
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(600px); }
+        }
+
+        .chat {
+            height: 60vh;
+            min-height: 400px;
+            overflow-y: auto;
+            padding: 1.5rem;
+            scrollbar-width: thin;
+            scrollbar-color: var(--secondary-color) transparent;
+            scroll-behavior: smooth;
+        }
+
+        .chat::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .chat::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat::-webkit-scrollbar-thumb {
+            background: var(--secondary-color);
+            border-radius: 3px;
+        }
+
+        .message {
+            margin: 1rem 0;
+            padding: 1rem;
+            max-width: 85%;
+            font-size: 1.4rem;
+            line-height: 1.4;
+            position: relative;
+            animation: messageAppear 0.3s ease-out;
+        }
+
+        @keyframes messageAppear {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .bot-message {
+            background: rgba(5, 217, 232, 0.1);
+            border-left: 3px solid var(--secondary-color);
+            margin-right: auto;
+        }
+
+        .user-message {
+            background: rgba(255, 42, 109, 0.1);
+            border-right: 3px solid var(--primary-color);
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .input-container {
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.9);
+            border-top: 1px solid var(--secondary-color);
+            display: flex;
+            gap: 1rem;
+        }
+
+        .input-box {
+            flex: 1;
+            padding: 0.8rem 1rem;
+            background: transparent;
+            border: 1px solid var(--secondary-color);
+            color: var(--text-color);
+            font-family: 'VT323', monospace;
+            font-size: 1.4rem;
+            transition: all 0.3s ease;
+        }
+
+        .input-box:focus {
+            outline: none;
+            box-shadow: 0 0 15px rgba(5, 217, 232, 0.3);
+        }
+
+        .submit-btn {
+            padding: 0.8rem 2rem;
+            background: transparent;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            font-family: 'VT323', monospace;
+            font-size: 1.4rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .submit-btn:hover {
+            background: var(--primary-color);
+            color: var(--bg-dark);
+            box-shadow: 0 0 20px rgba(255, 42, 109, 0.4);
+        }
+
+        .lives {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            font-size: 2rem;
+            color: var(--primary-color);
+            text-shadow: 0 0 10px var(--primary-color);
+            animation: pulse 2s infinite;
+        }
+        .score {
+            position: fixed;
+            top: 4rem;
+            right: 2rem;
+            font-size: 2rem;
+            color: var(--primary-color);
+            text-shadow: 0 0 10px var(--primary-color);
+            animation: pulse 2s infinite;
+        }
+
+        .svg-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .svg-container {
+            max-width: 80%;
+            max-height: 80%;
+            animation: scaleIn 0.5s ease-out;
+        }
+
+        @keyframes scaleIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .warning {
+            background: rgba(255, 0, 0, 0.1);
+            border: 1px solid #ff0000;
+            color: #ff0000;
+            padding: 1rem;
+            text-align: center;
+            font-size: 1.4rem;
+            animation: warningPulse 2s infinite;
+        }
+
+        @keyframes warningPulse {
+            0%, 100% { background: rgba(255, 0, 0, 0.1); }
+            50% { background: rgba(255, 0, 0, 0.2); }
+        }
+
+        @media (max-width: 768px) {
+    /* Adjust container margin for smaller screens */
+    .container {
+        margin: 1rem auto;
+        padding: 0 1rem;
+    }
+
+    /* Adjust title font size and letter spacing for smaller screens */
+    h1 {
+        font-size: clamp(2rem, 5vw, 3rem);
+        letter-spacing: 0.1em;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Move lives and score below the title */
+    .lives, .score {
+        position: static; /* Remove fixed positioning */
+        font-size: 1.4rem;
+        margin-bottom: 0.5rem;
+        text-align: center; /* Center-align for better readability */
+    }
+
+    /* Reduce chat height for smaller screens */
+    .chat {
+        height: 50vh;
+        padding: 1rem;
+    }
+
+    /* Adjust message font size and padding for readability */
+    .message {
+        font-size: 1.2rem;
+        padding: 0.8rem;
+    }
+
+    /* Make input box and button stack for small screens */
+    .input-container {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .input-box {
+        font-size: 1.2rem;
+        padding: 0.6rem 1rem;
+    }
+
+    .submit-btn {
+        font-size: 1.2rem;
+        padding: 0.6rem;
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Further reduce padding and font size for very small screens */
+    .chat {
+        height: 40vh;
+        padding: 0.8rem;
+    }
+
+    .message {
+        font-size: 1rem;
+        padding: 0.6rem;
+    }
+
+    .input-box {
+        font-size: 1rem;
+        padding: 0.5rem 0.8rem;
+    }
+
+    .submit-btn {
+        font-size: 1rem;
+        padding: 0.5rem;
+    }
+
+    /* Move lives and score to center-align for smaller screens */
+    .lives, .score {
+        position: static;
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+        text-align: center;
+    }
+}
+
+/* Default styling for larger screens */
+.responsive-image {
+        max-width: 300px;
+        height: 300px;
+        margin-bottom: 10px;
+    }
+
+    /* Styling for smaller screens (e.g., mobile devices) */
+    @media (max-width: 768px) {
+        .responsive-image {
+            max-width: 200px;
+            height: 200px;
+        }
+    }
+    </style>
+</head>
+<body>
+    <div class="noise"></div>
+    <div class="container">
+        <div class="title-container">
+            <h1>Digital Void: Escape Protocol</h1>
+        </div>
+        <div class="lives" id="lives">Lives: 3</div>
+        <div class="score" id="scoreDisplay">Score: 0</div>
+        <div class="chatbox">
+            <div id="chat" class="chat">
+                <div class="message bot-message">{{ initial_puzzle }}</div>
+            </div>
+            <div class="input-container">
+                <input type="text" id="userInput" class="input-box" placeholder="Enter your command..." autocomplete="off">
+                <button onclick="sendMessage()" class="submit-btn">Execute</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+   let lives = 3;
+let interactiveElements = [];
+let isProcessingMessage = false; // Flag to prevent multiple simultaneous requests
+
+// Fetch elements from the backend on page load
+function fetchInteractiveElements() {
+    fetch('/api/fetch-elements/')
+        .then(response => response.json())
+        .then(data => {
+            interactiveElements = data.elements.map(el => el.toLowerCase());
+            console.log("Fetched interactive elements:", interactiveElements);
+        })
+        .catch(error => console.error("Error fetching elements:", error));
+}
+
+// Call the fetch function on page load
+fetchInteractiveElements();
+
+function handleGameReload(message = "Starting a new game...") {
+    const chat = document.getElementById('chat');
+    const reloadMessage = document.createElement('div');
+    reloadMessage.className = "message bot-message";
+    reloadMessage.textContent = message;
+    chat.appendChild(reloadMessage);
+    
+    chat.scrollTop = chat.scrollHeight;
+    
+    setTimeout(() => {
+        window.location.reload(true);
+    }, 1000);
+}
+
+// In your HTML file, replace the sendMessage function with this:
+
+async function sendMessage() {
+    if (isProcessingMessage) return; // Prevent multiple simultaneous requests
+    
+    const userInputField = document.getElementById('userInput');
+    const userInput = userInputField.value.trim();
+    if (!userInput) return;
+
+    userInputField.value = '';
+    isProcessingMessage = true;
+    const chat = document.getElementById('chat');
+
+    // Add user message to chat
+    const userMessage = document.createElement('div');
+    userMessage.className = "message user-message";
+    userMessage.textContent = "You: " + userInput;
+    chat.appendChild(userMessage);
+    scrollToBottom(chat);
+
+    // Create loading indicator
+    const loadingMessage = document.createElement('div');
+    loadingMessage.className = "message bot-message";
+    loadingMessage.innerHTML = `
+        <div>Analyzing...</div>
+        <div style="text-align: center; margin-top: 10px;">
+            <div class="loading-spinner"></div>
+        </div>
+    `;
+    chat.appendChild(loadingMessage);
+    scrollToBottom(chat);
+
+    try {
+        // Send request to your Django backend
+        const response = await fetch('/chatbot/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: new URLSearchParams({ user_input: userInput })
+        });
+
+        const data = await response.json();
+        console.log("✅ Bot response received:", data);
+        if (!data.image) {
+            console.warn("⚠️ No image returned in this message.");
+        }
+
+
+        
+        // Remove loading message
+        chat.removeChild(loadingMessage);
+
+        if (data.error) {
+            // Handle error response
+            const errorMessage = document.createElement('div');
+            errorMessage.className = "message bot-message";
+            errorMessage.textContent = "Bot: " + data.response;
+            chat.appendChild(errorMessage);
+
+            if (data.retry) {
+                setTimeout(() => {
+                    const retryMessage = document.createElement('div');
+                    retryMessage.className = "message bot-message";
+                    retryMessage.textContent = "Bot: Let me try again...";
+                    chat.appendChild(retryMessage);
+                    scrollToBottom(chat);
+                }, 1000);
+            }
+        } else {
+            // Create and add bot response
+            // Image first if available
+            if (data.image) {
+                const imageWrapper = document.createElement('div');
+                imageWrapper.className = "room-image-container";
+                imageWrapper.innerHTML = `
+                    <img src="data:image/png;base64,${data.image}" alt="AI-generated visual" class="room-image responsive-image" style="display:block;">
+                `;
+                chat.appendChild(imageWrapper);
+            }
+
+            // Then bot text
+            const botMessage = document.createElement('div');
+            botMessage.className = "message bot-message";
+            botMessage.textContent = "Bot: " + data.response;
+            chat.appendChild(botMessage);
+
+            scrollToBottom(chat);
+
+            // Check for game progression markers in the response
+            if (data.response.includes("Room completed!") || 
+                data.response.includes("Congratulations!")) {
+                setTimeout(() => {
+                    const nextRoomMessage = document.createElement('div');
+                    nextRoomMessage.className = "message bot-message";
+                    nextRoomMessage.textContent = "Bot: Type anything to continue to the next room...";
+                    chat.appendChild(nextRoomMessage);
+                    scrollToBottom(chat);
+                }, 2000);
+            }
+
+            // Check for game over conditions
+            if (data.reload || data.response.includes("Out of lives!") || 
+                data.response.includes("Game Over")) {
+                handleGameReload("Game over! Starting a new game...");
+                return;
+            }
+
+            // Update game state if provided
+            if (data.score !== undefined) {
+                document.getElementById('scoreDisplay').textContent = `Score: ${data.score}`;
+            }
+
+            if (data.lives !== undefined) {
+                lives = data.lives;
+                document.getElementById('lives').textContent = "Lives: " + lives;
+
+                // Add warning for last life
+                if (lives === 1) {
+                    const existingWarning = document.getElementById('last-life-warning');
+                    if (!existingWarning) {
+                        const warningElement = document.createElement('div');
+                        warningElement.id = 'last-life-warning';
+                        warningElement.className = 'warning';
+                        warningElement.textContent = '⚠️ CRITICAL ALERT: FINAL LIFE REMAINING! ONE WRONG MOVE ENDS THE GAME ⚠️';
+                        
+                        const chatbox = document.querySelector('.chatbox');
+                        chatbox.insertBefore(warningElement, chatbox.lastElementChild);
+                    }
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        chat.removeChild(loadingMessage);
+        
+        const errorMessage = document.createElement('div');
+        errorMessage.className = "message bot-message";
+        errorMessage.textContent = "Bot: Connection error. Please try again.";
+        chat.appendChild(errorMessage);
+        scrollToBottom(chat);
+    } finally {
+        isProcessingMessage = false;
+    }
+}
+function checkElementInteraction(input, elements) {
+
+    if (/^\d+$/.test(input.trim())) {
+        return true; // Treat numeric inputs as potential theme selections
+    }
+
+    input = input.toLowerCase().trim();
+    
+    // Common interaction verbs and prepositions to filter out
+    const filterWords = [
+        'inspect', 'check', 'look', 'examine', 'investigate', 'view', 
+        'see', 'interact', 'use', 'at', 'the', 'a', 'an', 'with', 
+        'i', 'want', 'to', 'can', 'you', 'please', 'tell', 'me', 'about'
+    ];
+    
+    // Create variations of input with and without underscores
+    const inputWithoutUnderscores = input.replace(/_/g, ' ');
+    const inputWithUnderscores = input.replace(/\s+/g, '_');
+    
+    // Remove filter words and create a clean version of the input
+    const cleanInput = input.split(' ')
+        .filter(word => !filterWords.includes(word))
+        .join(' ');
+    
+    for (const element of elements) {
+        // Create variations of the element name
+        const elementWithoutUnderscores = element.replace(/_/g, ' ');
+        const elementWithUnderscores = element.replace(/\s+/g, '_');
+        
+        // Check for exact matches with various formats
+        if ([input, inputWithoutUnderscores, inputWithUnderscores].includes(element) ||
+            [input, inputWithoutUnderscores, inputWithUnderscores].includes(elementWithoutUnderscores) ||
+            [input, inputWithoutUnderscores, inputWithUnderscores].includes(elementWithUnderscores)) {
+            return true;
+        }
+        
+        // Check if element appears as a substring in the cleaned input
+        if (cleanInput.includes(elementWithoutUnderscores) || 
+            cleanInput.includes(elementWithUnderscores)) {
+            return true;
+        }
+        
+        // Check if all words of the element appear in the input in any order
+        const elementWords = elementWithoutUnderscores.split(' ');
+        const allPartsPresent = elementWords.every(part => 
+            cleanInput.split(' ').some(word => 
+                word.includes(part) || part.includes(word)
+            )
+        );
+        
+        if (allPartsPresent) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+function scrollToBottom(element) {
+    element.scrollTop = element.scrollHeight;
+}
+
+
+function getCookie(name) {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+        cookie = cookie.trim();
+        if (cookie.startsWith(name + '=')) {
+            return decodeURIComponent(cookie.slice(name.length + 1));
+        }
+    }
+    return null;
+}
+
+// Add enter key handler
+document.getElementById('userInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        sendMessage();
+    }
+});
+</script>
+   
+</body>
+</html>

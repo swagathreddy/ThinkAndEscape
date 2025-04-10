@@ -1,0 +1,15 @@
+gunicorn==21.2.0
+fuzzywuzzy==0.18.0
+psycopg2-binary==2.9.9
+Django==5.1.4
+django-cors-headers==4.6.0
+django-modeltranslation==0.19.11
+en_core_web_md@ https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.8.0/en_core_web_md-3.8.0-py3-none-any.whl#sha256=5e6329fe3fecedb1d1a02c3ea2172ee0fede6cea6e4aefb6a02d832dba78a310
+huggingface-hub==0.27.1
+python-dotenv
+pillow==10.4.0
+RapidFuzz==3.11.0
+spacy==3.8.3
+spacy-legacy==3.0.12
+spacy-loggers==1.0.5
+
