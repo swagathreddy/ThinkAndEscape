@@ -458,12 +458,12 @@ def chatbot_response(request):
                     continue
                 break
 
-response_json = response.json()
-if "choices" not in response_json or not response_json["choices"]:
-    print("❌ No valid choices in response.")
-    break
-
-reply = response_json["choices"][0]["message"]["content"].strip()
+            response_json = response.json()
+            if "choices" not in response_json or not response_json["choices"]:
+                print("❌ No valid choices in response.")
+                break
+            
+            reply = response_json["choices"][0]["message"]["content"].strip()
 
 
             # Add error handling for the message content
