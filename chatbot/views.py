@@ -14,7 +14,7 @@ import base64
 import time
 import unicodedata
 from fuzzywuzzy import fuzz
-from dotenv import load_dotenv
+from dotenv import load_dotenvF
 
 
 import json
@@ -458,7 +458,7 @@ def chatbot_response(request):
             
 
             # Add error handling for the message content
-            choice = response.choices[0]
+            choice = response_json["choices"][0]
             if not hasattr(choice, 'message') or not choice.message or not hasattr(choice.message, 'content'):
                 print(f"❌ OpenRouter error: Invalid message structure: {choice}")
                 if retries < MAX_RETRIES - 1:
@@ -468,7 +468,7 @@ def chatbot_response(request):
                     continue
                 break
                 
-            reply = choice.message.content.strip()
+            reply = choice["message"]["content"].strip()
             
             # Check for non-English content (add this to fix Chinese response issue)
             non_english_pattern = re.compile(r'[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]')
@@ -603,4 +603,7 @@ def chatbot_response(request):
     
     # Generic fallback
     debug_session(request, "ERROR")
-    return JsonResponse({"error": True, "response": "⚠️ Our AI assistant is temporarily unavailable. Please try again in a moment."}, status=500)
+    except Exception as e:
+        print(f"[ERROR] chatbot_response failed: {str(e)}")
+        return JsonResponse({"error": True, "response": "⚠️ Internal server error."}, status=500)
+
