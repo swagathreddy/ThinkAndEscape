@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Void: Escape Protocol</title>
+    <title>Think and Escape</title>
     <style>
        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
         
@@ -275,25 +275,6 @@
             box-shadow: 0 0 20px rgba(255, 42, 109, 0.4);
         }
 
-        .lives {
-            position: fixed;
-            top: 2rem;
-            right: 2rem;
-            font-size: 2rem;
-            color: var(--primary-color);
-            text-shadow: 0 0 10px var(--primary-color);
-            animation: pulse 2s infinite;
-        }
-        .score {
-            position: fixed;
-            top: 4rem;
-            right: 2rem;
-            font-size: 2rem;
-            color: var(--primary-color);
-            text-shadow: 0 0 10px var(--primary-color);
-            animation: pulse 2s infinite;
-        }
-
         .svg-overlay {
             position: fixed;
             top: 0;
@@ -316,11 +297,6 @@
         @keyframes scaleIn {
             from { transform: scale(0.5); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
         }
 
         .warning {
@@ -350,14 +326,6 @@
         font-size: clamp(2rem, 5vw, 3rem);
         letter-spacing: 0.1em;
         margin-bottom: 1.5rem;
-    }
-
-    /* Move lives and score below the title */
-    .lives, .score {
-        position: static; /* Remove fixed positioning */
-        font-size: 1.4rem;
-        margin-bottom: 0.5rem;
-        text-align: center; /* Center-align for better readability */
     }
 
     /* Reduce chat height for smaller screens */
@@ -411,14 +379,6 @@
         font-size: 1rem;
         padding: 0.5rem;
     }
-
-    /* Move lives and score to center-align for smaller screens */
-    .lives, .score {
-        position: static;
-        font-size: 1.2rem;
-        margin-bottom: 0.5rem;
-        text-align: center;
-    }
 }
 
 /* Default styling for larger screens */
@@ -441,10 +401,8 @@
     <div class="noise"></div>
     <div class="container">
         <div class="title-container">
-            <h1>Digital Void: Escape Protocol</h1>
+            <h1>Think and Escape</h1>
         </div>
-        <div class="lives" id="lives">Lives: 3</div>
-        <div class="score" id="scoreDisplay">Score: 0</div>
         <div class="chatbox">
             <div id="chat" class="chat">
                 <div class="message bot-message">{{ initial_puzzle }}</div>
@@ -457,22 +415,18 @@
     </div>
 
 <script>
-   let lives = 3;
 let interactiveElements = [];
-let isProcessingMessage = false; // Flag to prevent multiple simultaneous requests
+let isProcessingMessage = false;
+let responseTimeout;
 
-// Fetch elements from the backend on page load
 function fetchInteractiveElements() {
     fetch('/api/fetch-elements/')
         .then(response => response.json())
         .then(data => {
             interactiveElements = data.elements.map(el => el.toLowerCase());
-            console.log("Fetched interactive elements:", interactiveElements);
         })
         .catch(error => console.error("Error fetching elements:", error));
 }
-
-// Call the fetch function on page load
 fetchInteractiveElements();
 
 function handleGameReload(message = "Starting a new game...") {
@@ -481,48 +435,48 @@ function handleGameReload(message = "Starting a new game...") {
     reloadMessage.className = "message bot-message";
     reloadMessage.textContent = message;
     chat.appendChild(reloadMessage);
-    
     chat.scrollTop = chat.scrollHeight;
-    
-    setTimeout(() => {
-        window.location.reload(true);
-    }, 1000);
+    setTimeout(() => window.location.reload(true), 1000);
 }
 
-// In your HTML file, replace the sendMessage function with this:
+function startResponseTimer() {
+    clearTimeout(responseTimeout);
+    responseTimeout = setTimeout(() => {
+        const chat = document.getElementById('chat');
+        const reminder = document.createElement('div');
+        reminder.className = "message bot-message";
+        reminder.textContent = "⏱️ It's been a while. If you're stuck, ask for a hint or rephrase your input!";
+        chat.appendChild(reminder);
+        scrollToBottom(chat);
+        document.getElementById('userInput').focus();
+    }, 50000);
+}
 
 async function sendMessage() {
-    if (isProcessingMessage) return; // Prevent multiple simultaneous requests
-    
+    if (isProcessingMessage) return;
+
     const userInputField = document.getElementById('userInput');
     const userInput = userInputField.value.trim();
     if (!userInput) return;
 
     userInputField.value = '';
     isProcessingMessage = true;
-    const chat = document.getElementById('chat');
+    startResponseTimer();
 
-    // Add user message to chat
+    const chat = document.getElementById('chat');
     const userMessage = document.createElement('div');
     userMessage.className = "message user-message";
     userMessage.textContent = "You: " + userInput;
     chat.appendChild(userMessage);
     scrollToBottom(chat);
 
-    // Create loading indicator
     const loadingMessage = document.createElement('div');
     loadingMessage.className = "message bot-message";
-    loadingMessage.innerHTML = `
-        <div>Analyzing...</div>
-        <div style="text-align: center; margin-top: 10px;">
-            <div class="loading-spinner"></div>
-        </div>
-    `;
+    loadingMessage.innerHTML = `<div>Analyzing...</div><div style="text-align:center;margin-top:10px;"><div class="loading-spinner"></div></div>`;
     chat.appendChild(loadingMessage);
     scrollToBottom(chat);
 
     try {
-        // Send request to your Django backend
         const response = await fetch('/chatbot/', {
             method: 'POST',
             headers: {
@@ -532,56 +486,30 @@ async function sendMessage() {
             body: new URLSearchParams({ user_input: userInput })
         });
 
+        clearTimeout(responseTimeout);
         const data = await response.json();
-        console.log("✅ Bot response received:", data);
-        if (!data.image) {
-            console.warn("⚠️ No image returned in this message.");
-        }
-
-
-        
-        // Remove loading message
         chat.removeChild(loadingMessage);
 
         if (data.error) {
-            // Handle error response
             const errorMessage = document.createElement('div');
             errorMessage.className = "message bot-message";
             errorMessage.textContent = "Bot: " + data.response;
             chat.appendChild(errorMessage);
-
-            if (data.retry) {
-                setTimeout(() => {
-                    const retryMessage = document.createElement('div');
-                    retryMessage.className = "message bot-message";
-                    retryMessage.textContent = "Bot: Let me try again...";
-                    chat.appendChild(retryMessage);
-                    scrollToBottom(chat);
-                }, 1000);
-            }
         } else {
-            // Create and add bot response
-            // Image first if available
             if (data.image) {
                 const imageWrapper = document.createElement('div');
                 imageWrapper.className = "room-image-container";
-                imageWrapper.innerHTML = `
-                    <img src="data:image/png;base64,${data.image}" alt="AI-generated visual" class="room-image responsive-image" style="display:block;">
-                `;
+                imageWrapper.innerHTML = `<img src="data:image/png;base64,${data.image}" alt="AI-generated visual" class="room-image responsive-image" style="display:block;">`;
                 chat.appendChild(imageWrapper);
             }
 
-            // Then bot text
             const botMessage = document.createElement('div');
             botMessage.className = "message bot-message";
             botMessage.textContent = "Bot: " + data.response;
             chat.appendChild(botMessage);
-
             scrollToBottom(chat);
 
-            // Check for game progression markers in the response
-            if (data.response.includes("Room completed!") || 
-                data.response.includes("Congratulations!")) {
+            if (data.response.includes("Room completed!") || data.response.includes("Congratulations!")) {
                 setTimeout(() => {
                     const nextRoomMessage = document.createElement('div');
                     nextRoomMessage.className = "message bot-message";
@@ -591,41 +519,15 @@ async function sendMessage() {
                 }, 2000);
             }
 
-            // Check for game over conditions
-            if (data.reload || data.response.includes("Out of lives!") || 
-                data.response.includes("Game Over")) {
+            if (data.reload || data.response.includes("Game Over")) {
                 handleGameReload("Game over! Starting a new game...");
                 return;
             }
-
-            // Update game state if provided
-            if (data.score !== undefined) {
-                document.getElementById('scoreDisplay').textContent = `Score: ${data.score}`;
-            }
-
-            if (data.lives !== undefined) {
-                lives = data.lives;
-                document.getElementById('lives').textContent = "Lives: " + lives;
-
-                // Add warning for last life
-                if (lives === 1) {
-                    const existingWarning = document.getElementById('last-life-warning');
-                    if (!existingWarning) {
-                        const warningElement = document.createElement('div');
-                        warningElement.id = 'last-life-warning';
-                        warningElement.className = 'warning';
-                        warningElement.textContent = '⚠️ CRITICAL ALERT: FINAL LIFE REMAINING! ONE WRONG MOVE ENDS THE GAME ⚠️';
-                        
-                        const chatbox = document.querySelector('.chatbox');
-                        chatbox.insertBefore(warningElement, chatbox.lastElementChild);
-                    }
-                }
-            }
         }
     } catch (error) {
+        clearTimeout(responseTimeout);
         console.error('Error:', error);
         chat.removeChild(loadingMessage);
-        
         const errorMessage = document.createElement('div');
         errorMessage.className = "message bot-message";
         errorMessage.textContent = "Bot: Connection error. Please try again.";
@@ -635,68 +537,10 @@ async function sendMessage() {
         isProcessingMessage = false;
     }
 }
-function checkElementInteraction(input, elements) {
-
-    if (/^\d+$/.test(input.trim())) {
-        return true; // Treat numeric inputs as potential theme selections
-    }
-
-    input = input.toLowerCase().trim();
-    
-    // Common interaction verbs and prepositions to filter out
-    const filterWords = [
-        'inspect', 'check', 'look', 'examine', 'investigate', 'view', 
-        'see', 'interact', 'use', 'at', 'the', 'a', 'an', 'with', 
-        'i', 'want', 'to', 'can', 'you', 'please', 'tell', 'me', 'about'
-    ];
-    
-    // Create variations of input with and without underscores
-    const inputWithoutUnderscores = input.replace(/_/g, ' ');
-    const inputWithUnderscores = input.replace(/\s+/g, '_');
-    
-    // Remove filter words and create a clean version of the input
-    const cleanInput = input.split(' ')
-        .filter(word => !filterWords.includes(word))
-        .join(' ');
-    
-    for (const element of elements) {
-        // Create variations of the element name
-        const elementWithoutUnderscores = element.replace(/_/g, ' ');
-        const elementWithUnderscores = element.replace(/\s+/g, '_');
-        
-        // Check for exact matches with various formats
-        if ([input, inputWithoutUnderscores, inputWithUnderscores].includes(element) ||
-            [input, inputWithoutUnderscores, inputWithUnderscores].includes(elementWithoutUnderscores) ||
-            [input, inputWithoutUnderscores, inputWithUnderscores].includes(elementWithUnderscores)) {
-            return true;
-        }
-        
-        // Check if element appears as a substring in the cleaned input
-        if (cleanInput.includes(elementWithoutUnderscores) || 
-            cleanInput.includes(elementWithUnderscores)) {
-            return true;
-        }
-        
-        // Check if all words of the element appear in the input in any order
-        const elementWords = elementWithoutUnderscores.split(' ');
-        const allPartsPresent = elementWords.every(part => 
-            cleanInput.split(' ').some(word => 
-                word.includes(part) || part.includes(word)
-            )
-        );
-        
-        if (allPartsPresent) {
-            return true;
-        }
-    }
-    
-    return false;
-}
 
 function scrollToBottom(element) {
     element.scrollTop = element.scrollHeight;
 }
-
 
 function getCookie(name) {
     const cookies = document.cookie.split(';');
@@ -709,13 +553,9 @@ function getCookie(name) {
     return null;
 }
 
-// Add enter key handler
 document.getElementById('userInput').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        sendMessage();
-    }
+    if (e.key === 'Enter') sendMessage();
 });
 </script>
-   
 </body>
 </html>
