@@ -439,14 +439,12 @@ def chatbot_response(request):
 
             
             # Check for rate limit in error field
-            if hasattr(response, 'error') and response.error:
-                error_msg = response.error.get('message', '')
-                if 'Rate limit exceeded' in error_msg:
-                    print(f"Rate limit exceeded. Rotating keys...")
-                    client = rotate_key()
-                    retries += 1
-                    time.sleep(1)  # Add a delay before retrying
-                    continue
+            try:
+                response_json = response.json()
+            except ValueError:
+                print("❌ Response was not JSON:", response.text)
+                break
+
                     
             # Add error handling for the response structure
             if response.status_code != 200:
@@ -467,17 +465,7 @@ def chatbot_response(request):
 
 
             # Add error handling for the message content
-            choice = response.choices[0]
-            if not hasattr(choice, 'message') or not choice.message or not hasattr(choice.message, 'content'):
-                print(f"❌ OpenRouter error: Invalid message structure: {choice}")
-                if retries < MAX_RETRIES - 1:
-                    client = rotate_key()
-                    retries += 1
-                    time.sleep(1)  # Add a delay before retrying
-                    continue
-                break
-                
-            reply = choice.message.content.strip()
+            
             
             # Check for non-English content (add this to fix Chinese response issue)
             non_english_pattern = re.compile(r'[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]')
