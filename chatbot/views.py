@@ -38,7 +38,7 @@ def rotate_key():
 
 def call_openrouter_api(messages, key):
     try:
-        print(f"[DEBUG] Using OpenRouter API key: {key[:6]}...")
+        logging.warning(f"[DEBUG] Using OpenRouter API key: {key[:6]}...")
         headers = {
             "Authorization": f"Bearer {key}",
             "Content-Type": "application/json"
