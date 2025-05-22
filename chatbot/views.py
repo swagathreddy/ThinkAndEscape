@@ -602,7 +602,9 @@ def chatbot_response(request):
         return JsonResponse({"response": fallback_response, "image": image_data})
     
     # Generic fallback
-    debug_session(request, "ERROR")
+        debug_session(request, "ERROR")
+        return JsonResponse({"error": True, "response": "⚠️ Our AI assistant is temporarily unavailable. Please try again in a moment."}, status=500)
+
     except Exception as e:
         print(f"[ERROR] chatbot_response failed: {str(e)}")
         return JsonResponse({"error": True, "response": "⚠️ Internal server error."}, status=500)
