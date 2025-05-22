@@ -533,13 +533,13 @@ def chatbot_response(request):
             return JsonResponse({"response": reply, "image": image_data})
         
         except Exception as e:
-            print(f"❌ OpenRouter error ({retries+1}/{MAX_RETRIES}):", traceback.format_exc())
-            if retries < MAX_RETRIES - 1:
-                client = rotate_key()
-                retries += 1
-                time.sleep(1)  # Add a small delay between retries
-            else:
-                break
+            import traceback
+            print("[ERROR] Unhandled server error in chatbot_response:", traceback.format_exc())
+            debug_session(request, "EXCEPTION")
+            return JsonResponse({
+                "error": True,
+                "response": "⚠️ Internal server error. Please try again later."
+            }, status=500)
 
     # Rest of the fallback code remains unchanged...
 
