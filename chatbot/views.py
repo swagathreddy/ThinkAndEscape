@@ -4,7 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 import logging
 import uuid
 import os
-from openai import OpenAI
+# from openai import OpenAI
 import traceback
 import re
 import requests
@@ -67,15 +67,15 @@ HF_KEYS = [k.strip() for k in os.getenv("HF_KEYS", "").split(",") if k.strip()]
 current_key_index = 0
 MAX_RETRIES = 3
 
-def get_openai_client():
-    """Get an OpenAI client with the current key."""
-    global current_key_index
+# def get_openai_client():
+#     """Get an OpenAI client with the current key."""
+#     global current_key_index
     
-    if not OPEN_KEYS:
-        raise RuntimeError("❌ No OpenRouter API keys available.")
+#     if not OPEN_KEYS:
+#         raise RuntimeError("❌ No OpenRouter API keys available.")
     
-    key = OPEN_KEYS[current_key_index % len(OPEN_KEYS)]
-    return OpenAI(api_key=key, base_url="https://openrouter.ai/api/v1")
+#     key = OPEN_KEYS[current_key_index % len(OPEN_KEYS)]
+#     return OpenAI(api_key=key, base_url="https://openrouter.ai/api/v1")
 
 def rotate_key():
     """Rotate to the next available API key."""
@@ -85,7 +85,34 @@ def rotate_key():
     return get_openai_client()
 
 # Create initial client
-client = get_openai_client()
+# client = get_openai_client()
+def call_openrouter_api(messages, key):
+    try:
+        headers = {
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": "deepseek/deepseek-chat:free",
+            "messages": messages,
+            "temperature": 0.7,
+            "max_tokens": 600
+        }
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=30
+        )
+        if response.status_code == 200:
+            return response.json()
+        else:
+            print(f"OpenRouter API error {response.status_code}: {response.text}")
+            return None
+    except Exception as e:
+        print("Exception during OpenRouter call:", str(e))
+        return None
+
 
 @csrf_exempt
 def index(request):
@@ -423,12 +450,20 @@ def chatbot_response(request):
     retries = 0
     while retries < MAX_RETRIES:
         try:
-            response = client.chat.completions.create(
-                model="deepseek/deepseek-chat:free",
-                messages=messages,
-                temperature=0.7,  # Slightly lower temperature for more consistent responses
-                max_tokens=600    # Increased token limit for more complete responses
-            )
+            key = OPEN_KEYS[current_key_index % len(OPEN_KEYS)]
+            response_json = call_openrouter_api(messages, key)
+            
+            if not response_json or "choices" not in response_json or not response_json["choices"]:
+                print("❌ OpenRouter returned no choices.")
+                if retries < MAX_RETRIES - 1:
+                    current_key_index = (current_key_index + 1) % len(OPEN_KEYS)
+                    retries += 1
+                    time.sleep(1)
+                    continue
+                break
+            
+            reply = response_json["choices"][0]["message"]["content"].strip()
+
             
             # Check for rate limit in error field
             if hasattr(response, 'error') and response.error:
