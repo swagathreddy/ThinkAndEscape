@@ -38,6 +38,7 @@ def rotate_key():
 
 def call_openrouter_api(messages, key):
     try:
+        print(f"[DEBUG] Using OpenRouter API key: {key[:6]}...")
         headers = {
             "Authorization": f"Bearer {key}",
             "Content-Type": "application/json"
@@ -95,6 +96,8 @@ logging.basicConfig(
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
 
 OPEN_KEYS = [k.strip() for k in os.getenv("OPEN_KEYS", "").split(",") if k.strip()]
+print(f"[DEBUG] OpenRouter Keys Loaded: {[k[:6] + '...' for k in OPEN_KEYS]}")
+
 HF_KEYS = [k.strip() for k in os.getenv("HF_KEYS", "").split(",") if k.strip()]
 
 # Track the current key index for key rotation
