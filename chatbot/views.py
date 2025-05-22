@@ -460,7 +460,7 @@ def chatbot_response(request):
                 response_json = call_openrouter_api(messages, key)
                 print("✅ OpenRouter response:", json.dumps(response_json, indent=2))
 
-               if not response_json or "choices" not in response_json or not response_json["choices"]:
+                if not response_json or "choices" not in response_json or not response_json["choices"]:
                     logging.error("❌ OpenRouter returned no choices or invalid structure:\n%s", json.dumps(response_json))
                     if retries < MAX_RETRIES - 1:
                         current_key_index = (current_key_index + 1) % len(OPEN_KEYS)
