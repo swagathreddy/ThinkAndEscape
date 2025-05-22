@@ -4,6 +4,7 @@ psycopg2-binary==2.9.9
 Django==5.1.4
 django-cors-headers==4.6.0
 django-modeltranslation==0.19.11
+whitenoise==6.6.0
 
 python-dotenv
 pillow==10.4.0
