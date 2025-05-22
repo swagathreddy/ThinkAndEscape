@@ -96,7 +96,11 @@ logging.basicConfig(
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
 
 OPEN_KEYS = [k.strip() for k in os.getenv("OPEN_KEYS", "").split(",") if k.strip()]
-print(f"[DEBUG] OpenRouter Keys Loaded: {[k[:6] + '...' for k in OPEN_KEYS]}")
+if not OPEN_KEYS:
+    logging.error("🚨 No OpenRouter API keys found in OPEN_KEYS.")
+else:
+    logging.warning(f"[DEBUG] OpenRouter Keys Loaded: {[k[:6] + '...' for k in OPEN_KEYS]}")
+
 
 HF_KEYS = [k.strip() for k in os.getenv("HF_KEYS", "").split(",") if k.strip()]
 
