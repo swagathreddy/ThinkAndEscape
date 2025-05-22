@@ -10,6 +10,7 @@ python-dotenv
 pillow==10.4.0
 RapidFuzz==3.11.0
 openai==1.25.0
+requests==2.31.0
 
 spacy-legacy==3.0.12
 spacy-loggers==1.0.5
