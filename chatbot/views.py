@@ -4,7 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 import logging
 import uuid
 import os
-# from openai import OpenAI
+
 import traceback
 import re
 import requests
@@ -29,6 +29,33 @@ def debug_session(request, tag=""):
     print(f"[{tag}] SESSION STATE: Theme='{theme}', Element='{element}', LastImageTheme='{last_image_theme}'")
 
 # Modified function for extracting themes and elements from response
+def call_openrouter_api(messages, key):
+    try:
+        headers = {
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": "deepseek/deepseek-chat:free",
+            "messages": messages,
+            "temperature": 0.7,
+            "max_tokens": 600
+        }
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=30
+        )
+        if response.status_code == 200:
+            return response.json()
+        else:
+            print(f"OpenRouter API error {response.status_code}: {response.text}")
+            return None
+    except Exception as e:
+        print("Exception during OpenRouter call:", str(e))
+        return None
+        
 def extract_candidates(text):
     """Extract numbered items from bot responses more reliably"""
     # Try standard pattern first
@@ -67,51 +94,13 @@ HF_KEYS = [k.strip() for k in os.getenv("HF_KEYS", "").split(",") if k.strip()]
 current_key_index = 0
 MAX_RETRIES = 3
 
-# def get_openai_client():
-#     """Get an OpenAI client with the current key."""
-#     global current_key_index
-    
-#     if not OPEN_KEYS:
-#         raise RuntimeError("❌ No OpenRouter API keys available.")
-    
-#     key = OPEN_KEYS[current_key_index % len(OPEN_KEYS)]
-#     return OpenAI(api_key=key, base_url="https://openrouter.ai/api/v1")
 
-def rotate_key():
-    """Rotate to the next available API key."""
-    global current_key_index
-    current_key_index = (current_key_index + 1) % len(OPEN_KEYS)
-    print(f"🔄 Rotating to next API key: {OPEN_KEYS[current_key_index][:10]}...")
-    return get_openai_client()
+
+
 
 # Create initial client
-# client = get_openai_client()
-def call_openrouter_api(messages, key):
-    try:
-        headers = {
-            "Authorization": f"Bearer {key}",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "model": "deepseek/deepseek-chat:free",
-            "messages": messages,
-            "temperature": 0.7,
-            "max_tokens": 600
-        }
-        response = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            headers=headers,
-            json=payload,
-            timeout=30
-        )
-        if response.status_code == 200:
-            return response.json()
-        else:
-            print(f"OpenRouter API error {response.status_code}: {response.text}")
-            return None
-    except Exception as e:
-        print("Exception during OpenRouter call:", str(e))
-        return None
+
+
 
 
 @csrf_exempt
@@ -466,24 +455,7 @@ def chatbot_response(request):
 
             
             # Check for rate limit in error field
-            if hasattr(response, 'error') and response.error:
-                error_msg = response.error.get('message', '')
-                if 'Rate limit exceeded' in error_msg:
-                    print(f"Rate limit exceeded. Rotating keys...")
-                    client = rotate_key()
-                    retries += 1
-                    time.sleep(1)  # Add a delay before retrying
-                    continue
-                    
-            # Add error handling for the response structure
-            if not hasattr(response, 'choices') or not response.choices or len(response.choices) == 0:
-                print(f"❌ OpenRouter error: Invalid response structure: {response}")
-                if retries < MAX_RETRIES - 1:
-                    client = rotate_key()
-                    retries += 1
-                    time.sleep(1)  # Add a delay before retrying
-                    continue
-                break
+            
 
             # Add error handling for the message content
             choice = response.choices[0]
