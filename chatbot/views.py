@@ -450,13 +450,13 @@ def chatbot_response(request):
                     
             # Add error handling for the response structure
             if response.status_code != 200:
-            print(f"❌ OpenRouter API error {response.status_code}: {response.text}")
-            if retries < MAX_RETRIES - 1:
-                client = rotate_key()
-                retries += 1
-                time.sleep(1)
-                continue
-            break
+                print(f"❌ OpenRouter API error {response.status_code}: {response.text}")
+                if retries < MAX_RETRIES - 1:
+                    client = rotate_key()
+                    retries += 1
+                    time.sleep(1)
+                    continue
+                break
 
 response_json = response.json()
 if "choices" not in response_json or not response_json["choices"]:
