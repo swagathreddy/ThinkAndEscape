@@ -4,11 +4,11 @@ psycopg2-binary==2.9.9
 Django==5.1.4
 django-cors-headers==4.6.0
 django-modeltranslation==0.19.11
-huggingface-hub==0.27.1
+
 python-dotenv
 pillow==10.4.0
 RapidFuzz==3.11.0
-spacy==3.8.3
+
 spacy-legacy==3.0.12
 spacy-loggers==1.0.5
 
