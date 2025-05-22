@@ -29,6 +29,13 @@ def debug_session(request, tag=""):
     print(f"[{tag}] SESSION STATE: Theme='{theme}', Element='{element}', LastImageTheme='{last_image_theme}'")
 
 # Modified function for extracting themes and elements from response
+def rotate_key():
+    global current_key_index
+    current_key_index = (current_key_index + 1) % len(OPEN_KEYS)
+    print(f"[KEY ROTATED] Switched to key index {current_key_index}")
+    return OPEN_KEYS[current_key_index]
+
+
 def call_openrouter_api(messages, key):
     try:
         headers = {
@@ -442,7 +449,8 @@ def chatbot_response(request):
             try:
                 key = OPEN_KEYS[current_key_index % len(OPEN_KEYS)]
                 response_json = call_openrouter_api(messages, key)
-                
+                print("✅ OpenRouter response:", json.dumps(response_json, indent=2))
+
                 if not response_json or "choices" not in response_json or not response_json["choices"]:
                     print("❌ OpenRouter returned no choices.")
                     if retries < MAX_RETRIES - 1:
@@ -460,14 +468,16 @@ def chatbot_response(request):
     
                 # Add error handling for the message content
                 choice = response_json["choices"][0]
-                if not hasattr(choice, 'message') or not choice.message or not hasattr(choice.message, 'content'):
-                    print(f"❌ OpenRouter error: Invalid message structure: {choice}")
+                if "message" not in choice or "content" not in choice["message"]:
+                    print("❌ Invalid message structure:", choice)
                     if retries < MAX_RETRIES - 1:
-                        client = rotate_key()
+                        current_key_index = (current_key_index + 1) % len(OPEN_KEYS)
                         retries += 1
-                        time.sleep(1)  # Add a delay before retrying
+                        time.sleep(1)
                         continue
                     break
+
+
                     
                 reply = choice["message"]["content"].strip()
                 
