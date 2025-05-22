@@ -94,15 +94,15 @@ logging.basicConfig(
 )
 
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
-OPEN_KEYS = [k.strip() for k in OPEN_KEYS.split(",") if k.strip()]
-OPEN_KEYS = os.environ.get("OPEN_KEYS", "")
+raw_open_keys = os.environ.get("OPEN_KEYS", "")
+OPEN_KEYS = [k.strip() for k in raw_open_keys.split(",") if k.strip()]
 if not OPEN_KEYS:
     logging.error("🚨 No OpenRouter API keys found in OPEN_KEYS.")
 else:
     logging.warning(f"[DEBUG] OpenRouter Keys Loaded: {[k[:6] + '...' for k in OPEN_KEYS]}")
 
-
-HF_KEYS = [k.strip() for k in os.getenv("HF_KEYS", "").split(",") if k.strip()]
+raw_hf_keys = os.environ.get("HF_KEYS", "")
+HF_KEYS = [k.strip() for k in raw_hf_keys.split(",") if k.strip()]
 
 # Track the current key index for key rotation
 current_key_index = 0
