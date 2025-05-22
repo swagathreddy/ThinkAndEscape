@@ -94,8 +94,8 @@ logging.basicConfig(
 )
 
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
-
-OPEN_KEYS = [k.strip() for k in os.getenv("OPEN_KEYS", "").split(",") if k.strip()]
+OPEN_KEYS = [k.strip() for k in OPEN_KEYS.split(",") if k.strip()]
+OPEN_KEYS = os.environ.get("OPEN_KEYS", "")
 if not OPEN_KEYS:
     logging.error("🚨 No OpenRouter API keys found in OPEN_KEYS.")
 else:
