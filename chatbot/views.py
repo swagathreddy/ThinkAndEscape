@@ -429,7 +429,7 @@ def chatbot_response(request):
                     "Content-Type": "application/json"
                 },
                 json={
-                    "model": "deepseek/deepseek-chat:free",
+                    "model": "mistralai/mistral-7b-instruct",
                     "messages": messages,
                     "temperature": 0.7,
                     "max_tokens": 600
